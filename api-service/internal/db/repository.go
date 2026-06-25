@@ -44,20 +44,23 @@ func (r *Repository) Close() error {
 	return r.client.Close()
 }
 
-// InsertVideoRecord inserts a new video record with the given title and rawObject.
+// InsertVideoRecord inserts a new video record with the given parameters.
 // It generates a new UUID for the document ID, creates the record with status "pending",
 // and saves it in Firestore.
-func (r *Repository) InsertVideoRecord(ctx context.Context, title, rawObject string) (models.VideoRecord, error) {
+func (r *Repository) InsertVideoRecord(ctx context.Context, userID, title, description, visibility, rawObject string) (models.VideoRecord, error) {
 	id := uuid.New().String()
 	now := time.Now().UTC()
 
 	v := models.VideoRecord{
-		ID:        id,
-		Title:     title,
-		Status:    models.StatusPending,
-		RawObject: rawObject,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:          id,
+		UserID:      userID,
+		Title:       title,
+		Description: description,
+		Visibility:  visibility,
+		Status:      models.StatusPending,
+		RawObject:   rawObject,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	_, err := r.client.Collection("videos").Doc(id).Set(ctx, v)

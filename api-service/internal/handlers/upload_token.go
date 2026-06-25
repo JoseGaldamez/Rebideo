@@ -12,12 +12,16 @@ import (
 	"cloud.google.com/go/storage"
 
 	"github.com/JoseGaldamez/rebideo-api-service/internal/db"
+	"github.com/JoseGaldamez/rebideo-api-service/internal/middleware"
 )
 
 // uploadTokenRequest is the expected JSON body for POST /upload-token.
 type uploadTokenRequest struct {
+	Title       string `json:"title"`
 	Filename    string `json:"filename"`
 	ContentType string `json:"content_type"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
 }
 
 // uploadTokenResponse is the JSON body returned on success.
@@ -52,6 +56,18 @@ func NewUploadTokenHandler(repo *db.Repository) *UploadTokenHandler {
 //  4. Call GCS SignedURL API with content-length-range: 1–104857600, TTL 15 min.
 //  5. Return {video_id, signed_url}.
 func (h *UploadTokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Step 1 — extract userID from claims
+	claims, ok := r.Context().Value(middleware.ClaimsKey).(map[string]any)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: missing claims"})
+		return
+	}
+	userID, ok := claims["user_id"].(string)
+	if !ok || userID == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: missing user id in claims"})
+		return
+	}
+
 	// Step 2 — decode and validate request body.
 	var req uploadTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -65,13 +81,22 @@ func (h *UploadTokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Visibility == "" {
+		req.Visibility = "public"
+	}
+	if req.Visibility != "public" && req.Visibility != "private" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "visibility must be either 'public' or 'private'",
+		})
+		return
+	}
+
+	if req.Title == "" {
+		req.Title = req.Filename
+	}
+
 	// Step 3 — insert Video_Record with status "pending" before generating the URL.
-	//
-	// PostgreSQL generates the UUID on INSERT via gen_random_uuid(), so we don't
-	// know the video ID until after the insert. We therefore insert with a temporary
-	// raw_object value, obtain the returned ID, compute the canonical GCS object key
-	// (videos/<id>/<filename>), and update raw_object in a second statement.
-	video, err := h.repo.InsertVideoRecord(r.Context(), req.Filename, req.Filename)
+	video, err := h.repo.InsertVideoRecord(r.Context(), userID, req.Title, req.Description, req.Visibility, req.Filename)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create video record"})
 		return

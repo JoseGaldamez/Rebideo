@@ -53,7 +53,7 @@ func main() {
 
 	// --- Handlers ---
 	uploadTokenHandler := handlers.NewUploadTokenHandler(repo)
-	videoMetadataHandler := handlers.NewVideoMetadataHandler(repo)
+	videoMetadataHandler := handlers.NewVideoMetadataHandler(repo, authClient)
 	healthHandler := handlers.NewHealthHandler(repo)
 
 	// --- Router ---

@@ -61,6 +61,29 @@
               :disabled="uploading"
             />
           </div>
+
+          <div class="form-group">
+            <label for="videoDescription">Descripción</label>
+            <textarea 
+              id="videoDescription" 
+              v-model="videoDescription" 
+              placeholder="Describe de qué trata tu video..."
+              :disabled="uploading"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="videoVisibility">Visibilidad</label>
+            <select 
+              id="videoVisibility" 
+              v-model="videoVisibility" 
+              :disabled="uploading"
+            >
+              <option value="public">Público (cualquiera puede verlo)</option>
+              <option value="private">Privado (solo tú puedes verlo)</option>
+            </select>
+          </div>
           
           <div class="form-group">
             <label for="videoFile">Seleccionar Archivo</label>
@@ -146,7 +169,7 @@ import {
   createUserWithEmailAndPassword, 
   onAuthStateChanged 
 } from 'firebase/auth'
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore'
 
 const { $firebaseAuth, $firebaseDb } = useNuxtApp()
 const config = useRuntimeConfig()
@@ -161,6 +184,8 @@ const authLoading = ref(false)
 
 // Upload State
 const videoTitle = ref('')
+const videoDescription = ref('')
+const videoVisibility = ref('public')
 const selectedFile = ref(null)
 const fileInputRef = ref(null)
 const uploading = ref(false)
@@ -252,8 +277,11 @@ const handleUpload = async () => {
         'Authorization': `Bearer ${idToken}`
       },
       body: JSON.stringify({
+        title: videoTitle.value,
         filename: selectedFile.value.name,
-        content_type: selectedFile.value.type
+        content_type: selectedFile.value.type,
+        description: videoDescription.value,
+        visibility: videoVisibility.value
       })
     })
 
@@ -272,6 +300,8 @@ const handleUpload = async () => {
 
     // Resetear formulario
     videoTitle.value = ''
+    videoDescription.value = ''
+    videoVisibility.value = 'public'
     selectedFile.value = null
     if (fileInputRef.value) fileInputRef.value.value = ''
     
@@ -329,18 +359,29 @@ const subscribeToVideos = () => {
 
   const q = query(
     collection($firebaseDb, 'videos'),
-    orderBy('created_at', 'desc')
-  )
+    where('user_id', '==', user.value.uid)
+  )  
 
   unsubscribeVideos = onSnapshot(q, (snapshot) => {
     const loadedVideos = []
-    snapshot.forEach((doc) => {
+
+
+    snapshot.forEach((doc) => {     
+
       const data = doc.data()
       loadedVideos.push({
         id: doc.id,
         ...data
       })
     })
+
+    // Ordenar por created_at desc en memoria para evitar requerir índices compuestos en Firestore
+    loadedVideos.sort((a, b) => {
+      const timeA = a.created_at?.toDate ? a.created_at.toDate().getTime() : new Date(a.created_at).getTime()
+      const timeB = b.created_at?.toDate ? b.created_at.toDate().getTime() : new Date(b.created_at).getTime()
+      return timeB - timeA
+    })
+
     videos.value = loadedVideos
   }, (err) => {
     console.error('Error al escuchar videos:', err)
@@ -427,7 +468,9 @@ const formatDate = (timestamp) => {
 
 .form-group input[type="text"],
 .form-group input[type="email"],
-.form-group input[type="password"] {
+.form-group input[type="password"],
+.form-group textarea,
+.form-group select {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 8px;
@@ -437,11 +480,19 @@ const formatDate = (timestamp) => {
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s;
+  font-family: inherit;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
   border-color: #6366f1;
   background: rgba(0, 0, 0, 0.3);
+}
+
+.form-group select option {
+  background: #111;
+  color: white;
 }
 
 .w-full {

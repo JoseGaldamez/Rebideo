@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"firebase.google.com/go/v4/auth"
 	"github.com/google/uuid"
 
 	"github.com/JoseGaldamez/rebideo-api-service/internal/db"
@@ -20,6 +22,8 @@ import (
 type videoMetadataResponse struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
 	Status      string `json:"status"`
 	PlaylistURL string `json:"playlist_url,omitempty"`
 }
@@ -28,14 +32,16 @@ type videoMetadataResponse struct {
 // It is a public endpoint — no auth middleware is applied.
 type VideoMetadataHandler struct {
 	repo            *db.Repository
+	authClient      *auth.Client
 	processedBucket string
 }
 
 // NewVideoMetadataHandler constructs a VideoMetadataHandler. The
 // GCS_PROCESSED_BUCKET environment variable is read once at construction time.
-func NewVideoMetadataHandler(repo *db.Repository) *VideoMetadataHandler {
+func NewVideoMetadataHandler(repo *db.Repository, authClient *auth.Client) *VideoMetadataHandler {
 	return &VideoMetadataHandler{
 		repo:            repo,
+		authClient:      authClient,
 		processedBucket: os.Getenv("GCS_PROCESSED_BUCKET"),
 	}
 }
@@ -72,6 +78,28 @@ func (h *VideoMetadataHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Step 2.5 — check visibility permission if private.
+	if video.Visibility == "private" {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing or invalid authorization header for private video"})
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		token, err := h.authClient.VerifyIDToken(r.Context(), tokenString)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired token"})
+			return
+		}
+
+		userID, ok := token.Claims["user_id"].(string)
+		if !ok || userID != video.UserID {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "forbidden: you do not own this private video"})
+			return
+		}
+	}
+
 	// Step 3 / 4 — build response based on current status.
 	if video.Status == models.StatusActive {
 		h.handleActiveVideo(w, r.Context(), video)
@@ -80,9 +108,11 @@ func (h *VideoMetadataHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// Status is not active — return current status without a playlist URL.
 	writeJSON(w, http.StatusOK, videoMetadataResponse{
-		ID:     video.ID,
-		Title:  video.Title,
-		Status: video.Status,
+		ID:          video.ID,
+		Title:       video.Title,
+		Description: video.Description,
+		Visibility:  video.Visibility,
+		Status:      video.Status,
 	})
 }
 
@@ -107,9 +137,11 @@ func (h *VideoMetadataHandler) handleActiveVideo(w http.ResponseWriter, ctx cont
 			_ = updateErr
 		}
 		writeJSON(w, http.StatusOK, videoMetadataResponse{
-			ID:     video.ID,
-			Title:  video.Title,
-			Status: models.StatusExpired,
+			ID:          video.ID,
+			Title:       video.Title,
+			Description: video.Description,
+			Visibility:  video.Visibility,
+			Status:      models.StatusExpired,
 		})
 		return
 	}
@@ -124,6 +156,8 @@ func (h *VideoMetadataHandler) handleActiveVideo(w http.ResponseWriter, ctx cont
 	writeJSON(w, http.StatusOK, videoMetadataResponse{
 		ID:          video.ID,
 		Title:       video.Title,
+		Description: video.Description,
+		Visibility:  video.Visibility,
 		Status:      video.Status,
 		PlaylistURL: playlistURL,
 	})

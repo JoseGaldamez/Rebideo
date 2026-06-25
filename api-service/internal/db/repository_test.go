@@ -24,15 +24,27 @@ func TestFirestoreRepository(t *testing.T) {
 	defer repo.Close()
 
 	// Test Insert
+	userID := "test-user"
 	title := "My Test Video"
+	description := "Test Description"
+	visibility := "public"
 	rawObject := "videos/temp/test.mp4"
-	v, err := repo.InsertVideoRecord(ctx, title, rawObject)
+	v, err := repo.InsertVideoRecord(ctx, userID, title, description, visibility, rawObject)
 	if err != nil {
 		t.Fatalf("Failed to insert video record: %v", err)
 	}
 
+	if v.UserID != userID {
+		t.Errorf("Expected userID %q, got %q", userID, v.UserID)
+	}
 	if v.Title != title {
 		t.Errorf("Expected title %q, got %q", title, v.Title)
+	}
+	if v.Description != description {
+		t.Errorf("Expected description %q, got %q", description, v.Description)
+	}
+	if v.Visibility != visibility {
+		t.Errorf("Expected visibility %q, got %q", visibility, v.Visibility)
 	}
 	if v.Status != models.StatusPending {
 		t.Errorf("Expected status %q, got %q", models.StatusPending, v.Status)

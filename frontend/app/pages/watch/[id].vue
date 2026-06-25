@@ -45,6 +45,9 @@
           <span class="status-badge active">Activo</span>
           <span class="info-label">Listo para transmisión adaptativa (HLS)</span>
         </div>
+        <p v-if="video.description" class="video-description">
+          {{ video.description }}
+        </p>
       </div>
     </div>
   </div>
@@ -56,6 +59,7 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const { $firebaseAuth } = useNuxtApp()
 
 const videoId = route.params.id
 const video = ref(null)
@@ -66,7 +70,19 @@ const fetchVideo = async () => {
   loading.value = true
   error.value = ''
   try {
-    const response = await fetch(`${config.public.apiBaseUrl}/videos/${videoId}`)
+    const headers = {}
+    if ($firebaseAuth.currentUser) {
+      const idToken = await $firebaseAuth.currentUser.getIdToken()
+      headers['Authorization'] = `Bearer ${idToken}`
+    }
+
+    const response = await fetch(`${config.public.apiBaseUrl}/videos/${videoId}`, {
+      headers
+    })
+    
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('No tienes permisos para ver este video privado.')
+    }
     if (response.status === 404) {
       throw new Error('El video solicitado no existe o ha expirado.')
     }
@@ -265,5 +281,13 @@ const getStatusMessage = (status) => {
 
 .info-label {
   color: #9ca3af;
+}
+
+.video-description {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #d1d5db;
+  line-height: 1.5;
+  white-space: pre-line;
 }
 </style>
