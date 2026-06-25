@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Emulador de Firestore para persistencia de metadatos de videos
+  firestore:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: firestore-emulator
+    ports:
+      - "8082:8080"
+    command: gcloud beta emulators firestore start --host-port=0.0.0.0:8080
+    environment:
+      - CLOUDSDK_CORE_PROJECT=rebideo-dev
+
+  # Emulador de Pub/Sub para comunicación de eventos de almacenamiento
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: pubsub-emulator
+    ports:
+      - "8085:8085"
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
+    environment:
+      - CLOUDSDK_CORE_PROJECT=rebideo-dev
+
+  # Emulador de Google Cloud Storage para subidas directas
+  storage:
+    image: fsouza/fake-gcs-server
+    container_name: storage-emulator
+    ports:
+      - "4443:4443"
+    command: -scheme http -cors-headers x-goog-content-length-range -public-host 127.0.0.1:4443
+    volumes:
+      - storage-data:/data
+
+  # Emulador de Firebase Auth (usando imagen oficial de Node.js)
+  auth:
+    image: node:20-alpine
+    container_name: auth-emulator
+    ports:
+      - "9099:9099"
+    volumes:
+      - ./firebase.json:/app/firebase.json
+    working_dir: /app
+    entrypoint: sh -c "npm install -g firebase-tools && firebase emulators:start --only auth --project rebideo-dev"
+
+volumes:
+  storage-data:
