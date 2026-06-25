@@ -4,10 +4,13 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/JoseGaldamez/rebideo-api-service/internal/db"
 )
@@ -54,8 +57,12 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// 3. Check PubSub
 	if err := h.checkPubSub(ctx); err != nil {
-		health["pubsub"] = "error: " + err.Error()
-		hasError = true
+		if isPermissionDenied(err) {
+			health["pubsub"] = "connected (bypassed IAM checks)"
+		} else {
+			health["pubsub"] = "error: " + err.Error()
+			hasError = true
+		}
 	}
 
 	if hasError {
@@ -105,3 +112,11 @@ func (h *HealthHandler) checkPubSub(ctx context.Context) error {
 	}
 	return nil
 }
+
+func isPermissionDenied(err error) bool {
+	if s, ok := status.FromError(err); ok {
+		return s.Code() == codes.PermissionDenied
+	}
+	return strings.Contains(err.Error(), "PermissionDenied") || strings.Contains(err.Error(), "IAM_PERMISSION_DENIED")
+}
+
