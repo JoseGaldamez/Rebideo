@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian: #0a0c10;
+  --color-surface-dim: #111318;
+  --color-surface-bright: #37393e;
+  --color-sidebar: #07090d;
+  --color-surface-container: #14171f;
+  --color-surface-low: #1a1c20;
+  --color-surface-high: #282a2e;
+  --color-surface-highest: #333539;
+  
+  --color-on-surface: #e2e2e8;
+  --color-on-surface-variant: #94a3b8;
+  
+  --color-outline: rgba(255, 255, 255, 0.1);
+  --color-outline-variant: #494454;
+  
+  --color-primary: #d0bcff;
+  --color-on-primary: #37265e;
+  
+  --color-secondary: #4cd7f6;
+  --color-on-secondary: #003640;
+  
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  
+  --color-success: #34d399;
+  --color-on-success: #064e3b;
+  
+  --color-warning: #fbbf24;
+  --color-on-warning: #78350f;
+  
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-3xl: 24px;
+}
+
+/* Base resets & styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  background-color: #0a0c10;
+  color: #e2e2e8;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glowing mesh background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(208, 188, 255, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(76, 215, 246, 0.05) 0%, transparent 45%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0c10;
+}
+::-webkit-scrollbar-thumb {
+  background: #282a2e;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #37393e;
+}
+
+/* Base typography elements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sora), sans-serif;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* Glassmorphism base class */
+.glass {
+  background: rgba(20, 23, 31, 0.45);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shrinkProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
