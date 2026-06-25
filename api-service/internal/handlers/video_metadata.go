@@ -10,7 +10,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
-	"golang.org/x/oauth2/google"
 
 	"github.com/JoseGaldamez/rebideo-api-service/internal/db"
 	"github.com/JoseGaldamez/rebideo-api-service/internal/models"
@@ -158,25 +157,19 @@ func (h *VideoMetadataHandler) generateSignedURL(ctx context.Context, objectKey 
 		return fmt.Sprintf("%s/%s/%s", emulatorHost, h.processedBucket, objectKey), nil
 	}
 
-	creds, err := google.FindDefaultCredentials(ctx, storage.ScopeReadOnly)
+	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return "", fmt.Errorf("handlers: find default credentials: %w", err)
+		return "", fmt.Errorf("handlers: create storage client: %w", err)
 	}
-
-	conf, err := google.JWTConfigFromJSON(creds.JSON, storage.ScopeReadOnly)
-	if err != nil {
-		return "", fmt.Errorf("handlers: parse service account JSON: %w", err)
-	}
+	defer client.Close()
 
 	opts := &storage.SignedURLOptions{
-		GoogleAccessID: conf.Email,
-		PrivateKey:     conf.PrivateKey,
-		Method:         "GET",
-		Expires:        time.Now().Add(60 * time.Minute),
-		Scheme:         storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(60 * time.Minute),
+		Scheme:  storage.SigningSchemeV4,
 	}
 
-	url, err := storage.SignedURL(h.processedBucket, objectKey, opts)
+	url, err := client.Bucket(h.processedBucket).SignedURL(objectKey, opts)
 	if err != nil {
 		return "", fmt.Errorf("handlers: sign URL: %w", err)
 	}

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"golang.org/x/oauth2/google"
 
 	"github.com/JoseGaldamez/rebideo-api-service/internal/db"
 )
@@ -106,31 +105,23 @@ func (h *UploadTokenHandler) generateSignedURL(ctx context.Context, objectKey, c
 		return fmt.Sprintf("%s/%s/%s?uploadType=media&name=%s", emulatorHost, h.rawBucket, objectKey, url.QueryEscape(objectKey)), nil
 	}
 
-	// Resolve Application Default Credentials. On Cloud Run this is the attached
-	// service account. Locally it uses gcloud application-default credentials.
-	creds, err := google.FindDefaultCredentials(ctx, storage.ScopeReadWrite)
+	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return "", fmt.Errorf("handlers: find default credentials: %w", err)
+		return "", fmt.Errorf("handlers: create storage client: %w", err)
 	}
-
-	conf, err := google.JWTConfigFromJSON(creds.JSON, storage.ScopeReadWrite)
-	if err != nil {
-		return "", fmt.Errorf("handlers: parse service account JSON: %w", err)
-	}
+	defer client.Close()
 
 	opts := &storage.SignedURLOptions{
-		GoogleAccessID: conf.Email,
-		PrivateKey:     conf.PrivateKey,
-		Method:         "PUT",
-		Expires:        time.Now().Add(15 * time.Minute),
-		ContentType:    contentType,
-		Scheme:         storage.SigningSchemeV4,
+		Method:      "PUT",
+		Expires:     time.Now().Add(15 * time.Minute),
+		ContentType: contentType,
+		Scheme:      storage.SigningSchemeV4,
 		// The x-goog-content-length-range header is included in the signed string
 		// so GCS rejects uploads outside the [1, 104857600] byte range.
 		Headers: []string{"x-goog-content-length-range:1,104857600"},
 	}
 
-	url, err := storage.SignedURL(h.rawBucket, objectKey, opts)
+	url, err := client.Bucket(h.rawBucket).SignedURL(objectKey, opts)
 	if err != nil {
 		return "", fmt.Errorf("handlers: sign URL: %w", err)
 	}
