@@ -1,5 +1,16 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          // Modifying the pattern changes the generated hash/name structure
+          chunkFileNames: '_nuxt/[name].[hash].js',
+          entryFileNames: '_nuxt/[name].[hash].js',
+        }
+      }
+    }
+  },
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   runtimeConfig: {
