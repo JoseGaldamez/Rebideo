@@ -20,7 +20,7 @@ if (typeof window !== 'undefined') {
   auth = getAuth(app)
   db = getFirestore(app)
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_EMULATOR === 'true') {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
     connectFirestoreEmulator(db, '127.0.0.1', 8082)
   }

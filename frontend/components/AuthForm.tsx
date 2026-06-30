@@ -1,5 +1,4 @@
 "use client"
-
 import React, { useState } from 'react'
 import { 
   signInWithEmailAndPassword, 
@@ -78,119 +77,165 @@ export default function AuthForm({ isSignUp = false }: AuthFormProps) {
   }
 
   return (
-    <>
-      <div className="backdrop-blur-md bg-zinc-900/45 p-10 border border-outline rounded-3xl w-full max-w-[440px] shadow-2xl flex flex-col items-center relative">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold font-sora text-primary mb-1">Rebideo</h2>
-        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest opacity-80">Premium Content Portal</p>
+    <div className="relative w-full flex flex-col items-center justify-center py-6">
+      {/* Background Image (Blurred for a softer, less distracting texture) */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none select-none bg-cover bg-center transition-all duration-1000 blur-[8px] scale-[1.05]"
+        style={{
+          backgroundImage: `url(${isSignUp ? '/register-bg.jpg' : '/login-bg.jpg'})`
+        }}
+      />
+
+      {/* Slow Moving Dark Gradient Overlay */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none select-none bg-[length:200%_200%] animate-gradient-slow opacity-95"
+        style={{
+          backgroundImage: 'linear-gradient(135deg, rgba(10, 12, 16, 0.93) 0%, rgba(55, 30, 95, 0.42) 35%, rgba(15, 60, 85, 0.38) 70%, rgba(10, 12, 16, 0.95) 100%)'
+        }}
+      />
+
+      {/* Background Glowing Ambient Light (Drifting Orbs covering full viewport) */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none opacity-80 mix-blend-screen">
+        <div className="absolute -top-[10%] -left-[10%] w-[320px] md:w-[450px] h-[320px] md:h-[450px] rounded-full bg-primary/10 blur-[90px] md:blur-[120px] animate-float-1"></div>
+        <div className="absolute -bottom-[15%] -right-[10%] w-[360px] md:w-[500px] h-[360px] md:h-[500px] rounded-full bg-secondary/8 blur-[110px] md:blur-[140px] animate-float-2"></div>
+        <div className="absolute top-[30%] -right-[15%] w-[260px] md:w-[350px] h-[260px] md:h-[350px] rounded-full bg-tertiary/6 blur-[80px] md:blur-[100px] animate-float-3"></div>
       </div>
 
-      <form onSubmit={handleAuth} className="w-full">
-        {/* Email Field */}
-        <div className="flex flex-col gap-3 mb-6 w-full">
-          <label htmlFor="email" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Email Address</label>
-          <div className="relative w-full">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">mail</span>
-            <input 
-              type="email" 
-              id="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-              placeholder="name@company.com"
-              className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-xl py-3.5 pr-4 pl-12 text-white font-inter text-sm transition-all outline-none"
-              disabled={authLoading}
-            />
+      {/* Auth Card */}
+      <div className="relative z-10 w-full max-w-[420px] glass p-8 md:p-10 rounded-[28px] border border-white/[0.08] shadow-[0_25px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl animate-fade-in flex flex-col items-center">
+        {/* Logo and Greeting */}
+        <div className="text-center mb-8 flex flex-col items-center select-none">
+          <div className="w-11 h-11 rounded-xl bg-white text-black flex items-center justify-center font-sora font-extrabold text-xl mb-4 shadow-xl shadow-white/5 hover:scale-105 transition-transform duration-300">
+            R
           </div>
+          <h2 className="text-xl font-bold font-sora text-white tracking-tight">
+            {isSignUp ? 'Crea tu cuenta' : 'Ingresa a Rebideo'}
+          </h2>
+          <p className="text-xs text-white/40 font-light mt-1.5">
+            {isSignUp ? 'Únete al portal de vídeo más fácil y rápido' : 'El portal para compartir tus vídeos'}
+          </p>
         </div>
 
-        {/* Password Field */}
-        <div className="flex flex-col gap-3 mb-6 w-full">
-          <div className="flex justify-between items-center">
-            <label htmlFor="password" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Password</label>
-            <a href="#" className="text-[10px] font-bold text-secondary transition-opacity hover:opacity-80" onClick={(e) => { e.preventDefault(); forgotPassword(); }}>
-              Olvidé mi contraseña
-            </a>
-          </div>
-          <div className="relative w-full">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">lock</span>
-            <input 
-              type={showPassword ? 'text' : 'password'} 
-              id="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-              placeholder="••••••••"
-              className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-xl py-3.5 pr-4 pl-12 text-white font-inter text-sm transition-all outline-none"
-              disabled={authLoading}
-            />
-            <button 
-              type="button" 
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none text-on-surface-variant hover:text-white cursor-pointer flex items-center justify-center p-1"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={authLoading}
-            >
-              <span className="material-symbols-outlined text-xl">
-                {showPassword ? 'visibility_off' : 'visibility'}
+        <form onSubmit={handleAuth} className="w-full">
+          {/* Email Field */}
+          <div className="flex flex-col gap-2 mb-5 w-full group">
+            <label htmlFor="email" className="text-[10px] font-semibold text-white/45 uppercase tracking-[0.12em]">
+              Correo Electrónico
+            </label>
+            <div className="relative w-full">
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/25 group-focus-within:text-primary transition-colors text-xl">
+                mail
               </span>
-            </button>
+              <input 
+                type="email" 
+                id="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)}
+                required 
+                placeholder="nombre@compania.com"
+                className="w-full bg-white/[0.015] border border-white/[0.08] hover:border-white/15 focus:border-primary/50 focus:bg-white/[0.035] rounded-xl py-3.5 pr-4 pl-12 text-white font-inter text-sm transition-all duration-300 outline-none focus:ring-1 focus:ring-primary/20 shadow-inner"
+                disabled={authLoading}
+              />
+            </div>
           </div>
+
+          {/* Password Field */}
+          <div className="flex flex-col gap-2 mb-6 w-full group">
+            <div className="flex justify-between items-center">
+              <label htmlFor="password" className="text-[10px] font-semibold text-white/45 uppercase tracking-[0.12em]">
+                Contraseña
+              </label>
+              {!isSignUp && (
+                <a href="#" className="text-[10px] font-semibold text-primary/60 hover:text-primary transition-colors" onClick={(e) => { e.preventDefault(); forgotPassword(); }}>
+                  ¿Olvidaste tu contraseña?
+                </a>
+              )}
+            </div>
+            <div className="relative w-full">
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/25 group-focus-within:text-primary transition-colors text-xl">
+                lock
+              </span>
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                id="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+                placeholder="••••••••"
+                className="w-full bg-white/[0.015] border border-white/[0.08] hover:border-white/15 focus:border-primary/50 focus:bg-white/[0.035] rounded-xl py-3.5 pr-12 pl-12 text-white font-inter text-sm transition-all duration-300 outline-none focus:ring-1 focus:ring-primary/20 shadow-inner"
+                disabled={authLoading}
+              />
+              <button 
+                type="button" 
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none text-white/25 hover:text-white cursor-pointer flex items-center justify-center p-1 transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={authLoading}
+              >
+                <span className="material-symbols-outlined text-xl">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Submit Trigger */}
+          <button 
+            type="submit" 
+            className="mt-2 h-12 w-full flex items-center justify-center bg-white hover:bg-neutral-200 text-black font-semibold text-xs uppercase tracking-wider rounded-full cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none" 
+            disabled={authLoading}
+          >
+            {authLoading ? (
+              <span className="w-5 h-5 border-2 border-black/10 border-l-black rounded-full animate-spin"></span>
+            ) : (
+              <span>{isSignUp ? 'Crear Cuenta' : 'Iniciar Sesión'}</span>
+            )}
+          </button>
+        </form>
+
+        {/* Separator */}
+        <div className="w-full flex items-center gap-3 my-6 select-none">
+          <div className="flex-1 h-px bg-white/[0.06]"></div>
+          <span className="text-[9px] text-white/25 uppercase font-semibold tracking-[0.18em]">O continúa con</span>
+          <div className="flex-1 h-px bg-white/[0.06]"></div>
         </div>
 
+        {/* Social Logins */}
+        <div className="w-full mb-6">
+          <button 
+            className="w-full py-3 px-4 border border-white/[0.08] hover:border-white/20 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2.5 transition-all duration-300 bg-white/[0.01] hover:bg-white/[0.03] cursor-pointer" 
+            onClick={() => socialLogin('Google')}
+          >
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 
+              alt="Google" 
+              className="w-4 h-4" 
+            />
+            <span>Google</span>
+          </button>
+        </div>
 
+        {/* Toggle Sign In / Sign Up */}
+        <div className="text-xs text-white/40 flex items-center gap-1.5 mb-6">
+          <span>{isSignUp ? '¿Ya tienes una cuenta?' : '¿No tienes una cuenta?'}</span>
+          <Link href={isSignUp ? '/login' : '/register'} className="text-primary hover:text-[#ebdfff] transition-colors font-medium">
+            {isSignUp ? 'Iniciar Sesión' : 'Crea una cuenta'}
+          </Link>
+        </div>
 
-        {/* Submit Trigger */}
-        <button 
-          type="submit" 
-          className="mt-3 h-12 w-full flex items-center justify-center bg-primary hover:bg-[#e9ddff] text-on-primary font-bold text-sm rounded-full cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
-          disabled={authLoading}
-        >
-          {authLoading ? (
-            <span className="w-5 h-5 border-2 border-white/10 border-l-on-primary rounded-full animate-spin"></span>
-          ) : (
-            <span>{isSignUp ? 'Crear Cuenta' : 'Iniciar Sesión'}</span>
-          )}
-        </button>
-      </form>
-
-      {/* Social Logins Mockup */}
-      <div className="w-full flex items-center my-7 relative justify-center">
-        <div className="absolute left-0 right-0 h-px bg-outline z-0"></div>
-        <span className="bg-[#0f121a] px-4 text-on-surface-variant text-[10px] uppercase font-bold tracking-widest z-10 mx-auto">O continúa con</span>
+        {/* Security Footer */}
+        <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-white/30 font-medium border-t border-white/[0.04] pt-5 w-full justify-center select-none">
+          <span className="material-symbols-outlined text-xs">shield</span>
+          <span>Seguridad de extremo a extremo</span>
+        </div>
       </div>
-
-      <div className="flex gap-4 w-full mb-6">
-        <button className="flex-1 py-2.5 px-4 border border-outline hover:border-white/30 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-white/[0.02] cursor-pointer" onClick={() => socialLogin('Google')}>
-          <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" className="w-4 h-4" />
-          <span>Google</span>
-        </button>
-        <button className="flex-1 py-2.5 px-4 border border-outline hover:border-white/30 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-white/[0.02] cursor-pointer" onClick={() => socialLogin('Apple')}>
-          <span className="material-symbols-outlined text-lg">apple</span>
-          <span>Apple</span>
-        </button>
-      </div>
-
-      {/* Toggle Sign In / Sign Up */}
-      <div className="text-xs text-on-surface-variant flex gap-1.5 mb-8">
-        <span>{isSignUp ? '¿Ya tienes una cuenta?' : '¿No tienes una cuenta?'}</span>
-        <Link href={isSignUp ? '/login' : '/register'} className="text-primary hover:opacity-85 font-semibold transition-opacity">
-          {isSignUp ? 'Iniciar Sesión' : 'Crear una cuenta'}
-        </Link>
-      </div>
-
-      {/* Security Footer */}
-      <div className="flex items-center gap-1.5 color-on-surface-variant opacity-50 text-[10px] uppercase font-bold tracking-widest">
-        <span className="material-symbols-outlined text-sm">shield</span>
-        <span>Protocolo de Seguridad AES-256</span>
-      </div>
-    </div>
       {toast && (
         <Toast 
           message={toast.message} 
           type={toast.type} 
           onClose={() => setToast(null)} 
+          duration={5000}
         />
       )}
-    </>
+    </div>
   )
 }
