@@ -54,6 +54,7 @@ func main() {
 	// --- Handlers ---
 	uploadTokenHandler := handlers.NewUploadTokenHandler(repo)
 	videoMetadataHandler := handlers.NewVideoMetadataHandler(repo, authClient)
+	videoStatusHandler := handlers.NewVideoStatusHandler(repo)
 	healthHandler := handlers.NewHealthHandler(repo)
 
 	// --- Router ---
@@ -67,6 +68,9 @@ func main() {
 
 	// GET /videos/{id} — public endpoint, no auth required (Requirement 8.3, 16.1).
 	mux.Handle("GET /videos/{id}", videoMetadataHandler)
+
+	// PATCH /videos/{id}/status — internal status update endpoint.
+	mux.Handle("PATCH /videos/{id}/status", videoStatusHandler)
 
 	// --- Server ---
 	addr := os.Getenv("PORT")

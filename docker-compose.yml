@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Emulador de Firestore para persistencia de metadatos de videos
   firestore:
@@ -27,7 +25,11 @@ services:
     container_name: storage-emulator
     ports:
       - "4443:4443"
-    command: -scheme http -cors-headers x-goog-content-length-range -public-host 127.0.0.1:4443
+    command: -scheme http -cors-headers x-goog-content-length-range -public-host 127.0.0.1:4443 -event.pubsub-project-id=rebideo-dev -event.pubsub-topic=raw-video-uploads
+    environment:
+      - PUBSUB_EMULATOR_HOST=pubsub:8085
+    depends_on:
+      - pubsub
     volumes:
       - storage-data:/data
 
