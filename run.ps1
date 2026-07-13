@@ -60,13 +60,13 @@ elseif ($Action -eq "down") {
     # 1. Kill all spawned terminal window processes and their children
     if (Test-Path $PidsFile) {
         $Pids = Get-Content $PidsFile
-        foreach ($Pid in $Pids) {
-            if ($Pid) {
-                $Proc = Get-Process -Id $Pid -ErrorAction SilentlyContinue
+        foreach ($TargetPid in $Pids) {
+            if ($TargetPid) {
+                $Proc = Get-Process -Id $TargetPid -ErrorAction SilentlyContinue
                 if ($Proc) {
-                    Write-Host "Stopping process tree for PID $Pid..." -ForegroundColor Gray
+                    Write-Host "Stopping process tree for PID $TargetPid..." -ForegroundColor Gray
                     # /F forces termination, /T terminates specified process and child processes
-                    taskkill /F /T /PID $Pid 2>$null | Out-Null
+                    taskkill /F /T /PID $TargetPid 2>$null | Out-Null
                 }
             }
         }
