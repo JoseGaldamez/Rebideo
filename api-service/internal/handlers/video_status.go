@@ -27,7 +27,8 @@ func NewVideoStatusHandler(repo *db.Repository) *VideoStatusHandler {
 }
 
 type videoStatusRequest struct {
-	Status string `json:"status"`
+	Status       string `json:"status"`
+	ErrorMessage string `json:"error_message,omitempty"`
 }
 
 func (h *VideoStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +62,7 @@ func (h *VideoStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.repo.UpdateVideoRecordStatus(r.Context(), id, req.Status)
+	err := h.repo.UpdateVideoRecordStatus(r.Context(), id, req.Status, req.ErrorMessage)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "video not found"})

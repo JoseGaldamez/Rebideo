@@ -41,6 +41,9 @@ export default function DashboardPage() {
           created_at: data.created_at,
           visibility: data.visibility || 'public',
           video_url: data.video_url,
+          thumbnail_url: data.thumbnail_url,
+          processing_attempts: data.processing_attempts,
+          error_message: data.error_message,
           duration: data.duration,
           views: data.views,
           user_id: data.user_id

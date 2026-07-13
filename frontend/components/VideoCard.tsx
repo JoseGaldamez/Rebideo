@@ -61,6 +61,13 @@ export default function VideoCard({ video }: VideoCardProps) {
     <div className={`group rounded-xl overflow-hidden flex flex-col transition-all duration-300 bg-zinc-900/40 border border-outline hover:-translate-y-1.5 hover:border-white/15 hover:shadow-[0_16px_36px_rgba(0,0,0,0.6)] ${video.status === 'active' ? 'card-active' : ''}`}>
       {/* Thumbnail */}
       <div className="relative w-full aspect-video overflow-hidden cursor-pointer bg-gradient-to-br from-zinc-900 to-zinc-950" onClick={navigateToVideo}>
+        {video.thumbnail_url ? (
+          <img 
+            src={video.thumbnail_url} 
+            alt={video.title} 
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 animate-fade-in"
+          />
+        ) : null}
         <div className="w-full h-full flex items-center justify-center relative transition-transform duration-500 group-hover:scale-105 before:content-[''] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_center,rgba(208,188,255,0.05)_0%,transparent_80%)] before:z-1 before:pointer-events-none">
           <div className="bg-obsidian/60 w-14 h-14 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-10">
             <svg 

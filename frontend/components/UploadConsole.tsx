@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { User } from 'firebase/auth'
 
 interface UploadConsoleProps {
@@ -26,6 +26,30 @@ export default function UploadConsole({ user, onCancel, onUploadSuccess }: Uploa
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   const [uploadStatusMessage, setUploadStatusMessage] = useState<string>('')
   const [uploadError, setUploadError] = useState<string>('')
+  const [videoSrc, setVideoSrc] = useState<string>('')
+
+  // Tag Modal States
+  const [showTagModal, setShowTagModal] = useState<boolean>(false)
+  const [newTagInput, setNewTagInput] = useState<string>('')
+
+  // Manage Local Video Object URL to avoid leaks
+  useEffect(() => {
+    if (selectedFile) {
+      const url = URL.createObjectURL(selectedFile)
+      setVideoSrc(url)
+      return () => {
+        URL.revokeObjectURL(url)
+      }
+    } else {
+      setVideoSrc('')
+    }
+  }, [selectedFile])
+
+  const handleClearFile = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -81,12 +105,18 @@ export default function UploadConsole({ user, onCancel, onUploadSuccess }: Uploa
   }
 
   const addTag = () => {
-    const newTag = prompt('Escribe una nueva etiqueta (ej: TECH, MINIMAL):')
-    if (newTag) {
-      const sanitized = newTag.trim().replace('#', '').toUpperCase()
-      if (sanitized && !tags.includes(sanitized)) {
+    setNewTagInput('')
+    setShowTagModal(true)
+  }
+
+  const handleConfirmAddTag = () => {
+    const sanitized = newTagInput.trim().replace('#', '').toUpperCase()
+    if (sanitized) {
+      if (!tags.includes(sanitized)) {
         setTags([...tags, sanitized])
       }
+      setNewTagInput('')
+      setShowTagModal(false)
     }
   }
 
@@ -214,21 +244,21 @@ export default function UploadConsole({ user, onCancel, onUploadSuccess }: Uploa
 
       {/* Main Workspace */}
       <div className="flex flex-col lg:flex-row gap-8 p-10 rounded-3xl glass">
-        {/* Left Column: Media Zone */}
+        {/* Left Column: Media Zone & Core Settings */}
         <div className="flex-[4] flex flex-col gap-6">
-          {/* Drag & Drop Zone */}
+          {/* Drag & Drop / Video Preview Zone */}
           <div 
-            className={`group border-2 border-dashed rounded-3xl aspect-[16/10] flex items-center justify-center cursor-pointer text-center transition-all duration-200 p-6 ${
+            className={`group border rounded-3xl aspect-[16/10] overflow-hidden flex items-center justify-center transition-all duration-200 relative ${
               uploading ? 'pointer-events-none' : ''
             } ${
-              isDragging ? 'border-secondary bg-secondary/5 scale-[0.99]' :
-              selectedFile ? 'border-success bg-success/2' :
-              'border-outline bg-white/[0.01] hover:border-primary hover:bg-primary/[0.02]'
+              selectedFile ? 'border-outline bg-black' :
+              isDragging ? 'border-2 border-dashed border-secondary bg-secondary/5 scale-[0.99] cursor-pointer p-6' :
+              'border-2 border-dashed border-outline bg-white/[0.01] hover:border-primary hover:bg-primary/[0.02] cursor-pointer p-6'
             }`}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            onClick={triggerFileSelect}
+            onDragOver={!selectedFile ? onDragOver : undefined}
+            onDragLeave={!selectedFile ? onDragLeave : undefined}
+            onDrop={!selectedFile ? onDrop : undefined}
+            onClick={!selectedFile ? triggerFileSelect : undefined}
           >
             <input 
               type="file" 
@@ -239,31 +269,101 @@ export default function UploadConsole({ user, onCancel, onUploadSuccess }: Uploa
               disabled={uploading}
             />
             
-            <div className="flex flex-col items-center">
-              <div className="w-14 h-14 bg-white/[0.03] rounded-full flex items-center justify-center mx-auto mb-4 text-primary transition-all duration-200 group-hover:translate-y-[-4px] group-hover:bg-primary/10 group-hover:text-white">
-                <span className="material-symbols-outlined text-3xl">upload</span>
+            {selectedFile ? (
+              <div className="relative w-full h-full flex items-center justify-center">
+                {/* Clear / Select another video button */}
+                <button 
+                  type="button" 
+                  onClick={handleClearFile}
+                  className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-obsidian/85 hover:bg-black border border-white/10 hover:border-white/30 text-white flex items-center justify-center cursor-pointer transition-all duration-200 shadow-md backdrop-blur-xs"
+                  title="Cambiar video"
+                >
+                  <span className="material-symbols-outlined text-base">close</span>
+                </button>
+                
+                {/* Video Player */}
+                <video 
+                  src={videoSrc}
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-contain outline-none"
+                />
               </div>
-              <h4 className="text-lg font-semibold mb-1 text-white font-sora">Selecciona un video</h4>
-              <p className="text-xs text-on-surface-variant mb-2">Arrastra tus archivos MP4 o WebM</p>
-              <p className="text-[10px] text-on-surface-variant opacity-60 font-bold uppercase tracking-wider font-inter">Máx 100MB</p>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 bg-white/[0.03] rounded-full flex items-center justify-center mx-auto mb-4 text-primary transition-all duration-200 group-hover:translate-y-[-4px] group-hover:bg-primary/10 group-hover:text-white">
+                  <span className="material-symbols-outlined text-3xl">upload</span>
+                </div>
+                <h4 className="text-lg font-semibold mb-1 text-white font-sora">Selecciona un video</h4>
+                <p className="text-xs text-on-surface-variant mb-2">Arrastra tus archivos MP4 o WebM</p>
+                <p className="text-[10px] text-on-surface-variant opacity-60 font-bold uppercase tracking-wider font-inter">Máx 100MB</p>
+              </div>
+            )}
+          </div>
+
+          {/* Category & Visibility Row */}
+          <div className="flex flex-col sm:flex-row gap-5">
+            {/* Category Select */}
+            <div className="flex flex-col gap-3 flex-1">
+              <label htmlFor="videoCategory" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Categoría</label>
+              <select 
+                id="videoCategory" 
+                value={videoCategory} 
+                onChange={(e) => setVideoCategory(e.target.value)}
+                className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-full py-3 px-4 pr-12 text-white font-inter text-sm transition-all outline-none appearance-none cursor-pointer bg-[image:var(--tw-select-bg)] bg-[size:16px] bg-[position:right_16px_center] bg-no-repeat"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`
+                }}
+                disabled={uploading}
+              >
+                <option value="Cinematografía" className="bg-obsidian">Cinematografía</option>
+                <option value="Diseño Minimalista" className="bg-obsidian">Diseño Minimalista</option>
+                <option value="Arquitectura & Espacios" className="bg-obsidian">Arquitectura & Espacios</option>
+                <option value="Documentales" className="bg-obsidian">Documentales</option>
+                <option value="Tecnología & Futuro" className="bg-obsidian">Tecnología & Futuro</option>
+                <option value="Arte Digital" className="bg-obsidian">Arte Digital</option>
+                <option value="Música & Sonido" className="bg-obsidian">Música & Sonido</option>
+                <option value="Viajes & Naturaleza" className="bg-obsidian">Viajes & Naturaleza</option>
+                <option value="Animación & Motion Design" className="bg-obsidian">Animación & Motion Design</option>
+                <option value="Otra" className="bg-obsidian">Otra</option>
+              </select>
+            </div>
+
+            {/* Visibility Select */}
+            <div className="flex flex-col gap-3 flex-1">
+              <label htmlFor="videoVisibility" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Visibilidad</label>
+              <select 
+                id="videoVisibility" 
+                value={videoVisibility} 
+                onChange={(e) => setVideoVisibility(e.target.value)}
+                className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-full py-3 px-4 pr-12 text-white font-inter text-sm transition-all outline-none appearance-none cursor-pointer bg-[image:var(--tw-select-bg)] bg-[size:16px] bg-[position:right_16px_center] bg-no-repeat"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`
+                }}
+                disabled={uploading}
+              >
+                <option value="public" className="bg-obsidian">Público (abierto)</option>
+                <option value="private" className="bg-obsidian">Privado (solo tú)</option>
+              </select>
             </div>
           </div>
 
-          {/* Thumbnail Preview */}
-          <div className="flex flex-col gap-3">
-            <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Vista Previa de Miniatura</span>
-            <div className="w-full aspect-video bg-black/20 border border-outline rounded-xl overflow-hidden flex items-center justify-center">
-              {selectedFile ? (
-                <div className="flex flex-col items-center gap-3">
-                  <span className="w-7 h-7 border-3 border-primary/10 border-l-primary rounded-full animate-spin"></span>
-                  <span className="text-xs text-primary font-semibold">Generando...</span>
+          {/* Tags Select */}
+          <div className="flex flex-col gap-3 w-full">
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Etiquetas</label>
+            <div className="flex flex-wrap gap-2 items-center py-2">
+              {tags.map((tag, idx) => (
+                <div key={idx} className="inline-flex items-center gap-1.5 bg-primary/8 border border-primary/15 text-primary py-1.5 px-3.5 rounded-full text-xs font-bold font-inter uppercase">
+                  #{tag}
+                  <span className="material-symbols-outlined text-sm cursor-pointer opacity-70 hover:opacity-100 transition-opacity" onClick={() => removeTag(idx)}>close</span>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-on-surface-variant opacity-50">
-                  <span className="material-symbols-outlined text-3xl">movie</span>
-                  <span className="text-xs font-semibold">No hay archivo seleccionado</span>
-                </div>
-              )}
+              ))}
+              <button type="button" className="bg-white/[0.03] border border-dashed border-outline hover:bg-white/8 hover:border-on-surface-variant text-white py-1.5 px-3.5 rounded-full text-xs font-bold cursor-pointer transition-all duration-200" onClick={addTag}>
+                + Add
+              </button>
             </div>
           </div>
         </div>
@@ -286,73 +386,17 @@ export default function UploadConsole({ user, onCancel, onUploadSuccess }: Uploa
           </div>
 
           {/* Description Textarea */}
-          <div className="flex flex-col gap-3 w-full">
+          <div className="flex flex-col gap-3 w-full flex-grow">
             <label htmlFor="videoDescription" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Descripción</label>
             <textarea 
               id="videoDescription" 
               value={videoDescription} 
               onChange={(e) => setVideoDescription(e.target.value)}
               placeholder="Cuéntanos la historia detrás de este video..."
-              className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-2xl p-4 text-white font-inter text-sm transition-all outline-none resize-vertical min-h-[120px]"
+              className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-2xl p-4 text-white font-inter text-sm transition-all outline-none resize-none flex-grow min-h-[220px]"
               disabled={uploading}
-              rows={6}
+              rows={10}
             ></textarea>
-          </div>
-
-          {/* Category & Tags */}
-          <div className="flex flex-col sm:flex-row gap-5">
-            <div className="flex flex-col gap-3 flex-1">
-              <label htmlFor="videoCategory" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Categoría</label>
-              <select 
-                id="videoCategory" 
-                value={videoCategory} 
-                onChange={(e) => setVideoCategory(e.target.value)}
-                className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-full py-3 px-4 pr-12 text-white font-inter text-sm transition-all outline-none appearance-none cursor-pointer bg-[image:var(--tw-select-bg)] bg-[size:16px] bg-[position:right_16px_center] bg-no-repeat"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`
-                }}
-                disabled={uploading}
-              >
-                <option value="Cinematografía" className="bg-obsidian">Cinematografía</option>
-                <option value="Diseño Minimalista" className="bg-obsidian">Diseño Minimalista</option>
-                <option value="Arquitectura" className="bg-obsidian">Arquitectura</option>
-                <option value="Documentales" className="bg-obsidian">Documentales</option>
-                <option value="Tecnología" className="bg-obsidian">Tecnología</option>
-              </select>
-            </div>
-            
-            <div className="flex flex-col gap-3 flex-1">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Etiquetas</label>
-              <div className="flex flex-wrap gap-2 items-center py-2">
-                {tags.map((tag, idx) => (
-                  <div key={idx} className="inline-flex items-center gap-1.5 bg-primary/8 border border-primary/15 text-primary py-1.5 px-3.5 rounded-full text-xs font-bold font-inter uppercase">
-                    #{tag}
-                    <span className="material-symbols-outlined text-sm cursor-pointer opacity-70 hover:opacity-100 transition-opacity" onClick={() => removeTag(idx)}>close</span>
-                  </div>
-                ))}
-                <button type="button" className="bg-white/[0.03] border border-dashed border-outline hover:bg-white/8 hover:border-on-surface-variant text-white py-1.5 px-3.5 rounded-full text-xs font-bold cursor-pointer transition-all duration-200" onClick={addTag}>
-                  + Add
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Visibility Selection */}
-          <div className="flex flex-col gap-3 w-full">
-            <label htmlFor="videoVisibility" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-inter">Visibilidad</label>
-            <select 
-              id="videoVisibility" 
-              value={videoVisibility} 
-              onChange={(e) => setVideoVisibility(e.target.value)}
-              className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-full py-3 px-4 pr-12 text-white font-inter text-sm transition-all outline-none appearance-none cursor-pointer bg-[image:var(--tw-select-bg)] bg-[size:16px] bg-[position:right_16px_center] bg-no-repeat"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`
-              }}
-              disabled={uploading}
-            >
-              <option value="public" className="bg-obsidian">Público (cualquiera puede verlo)</option>
-              <option value="private" className="bg-obsidian">Privado (solo tú puedes verlo)</option>
-            </select>
           </div>
 
           {/* Error Panel */}
@@ -398,6 +442,58 @@ export default function UploadConsole({ user, onCancel, onUploadSuccess }: Uploa
           </div>
         </div>
       </div>
+
+      {/* Tag Dialog Modal */}
+      {showTagModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in p-4">
+          <div className="bg-obsidian border border-white/10 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-2xl relative">
+            <button 
+              type="button" 
+              onClick={() => setShowTagModal(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-white bg-transparent border-none cursor-pointer flex items-center justify-center p-1 rounded-full hover:bg-white/5 transition-all"
+            >
+              <span className="material-symbols-outlined text-xl">close</span>
+            </button>
+            
+            <div>
+              <h3 className="text-lg font-bold text-white font-sora mb-1">Añadir etiqueta</h3>
+              <p className="text-xs text-on-surface-variant">Introduce una etiqueta para tu video (ej: TECH, MINIMAL)</p>
+            </div>
+            
+            <input 
+              type="text"
+              value={newTagInput}
+              onChange={(e) => setNewTagInput(e.target.value)}
+              placeholder="ETIQUETA..."
+              className="w-full bg-white/[0.03] border border-outline focus:border-primary rounded-xl px-4 py-2.5 text-white uppercase text-sm font-semibold tracking-wider transition-all outline-none"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleConfirmAddTag()
+                }
+              }}
+            />
+            
+            <div className="flex justify-end gap-3 mt-2">
+              <button 
+                type="button"
+                onClick={() => setShowTagModal(false)}
+                className="py-2 px-4 rounded-full text-xs font-semibold bg-transparent hover:bg-white/5 border border-transparent text-on-surface-variant hover:text-white cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button"
+                onClick={handleConfirmAddTag}
+                disabled={!newTagInput.trim()}
+                className="py-2 px-5 rounded-full text-xs font-semibold bg-primary hover:bg-[#e9ddff] text-on-primary cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

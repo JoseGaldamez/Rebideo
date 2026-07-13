@@ -60,7 +60,7 @@ func TestFirestoreRepository(t *testing.T) {
 	}
 
 	// Test Update Status
-	err = repo.UpdateVideoRecordStatus(ctx, v.ID, models.StatusProcessing)
+	err = repo.UpdateVideoRecordStatus(ctx, v.ID, models.StatusProcessing, "")
 	if err != nil {
 		t.Fatalf("Failed to update status: %v", err)
 	}

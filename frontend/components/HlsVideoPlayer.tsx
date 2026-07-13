@@ -5,9 +5,10 @@ import Hls from 'hls.js'
 
 interface HlsVideoPlayerProps {
   src: string
+  poster?: string
 }
 
-export default function HlsVideoPlayer({ src }: HlsVideoPlayerProps) {
+export default function HlsVideoPlayer({ src, poster }: HlsVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const hlsRef = useRef<Hls | null>(null)
 
@@ -51,6 +52,7 @@ export default function HlsVideoPlayer({ src }: HlsVideoPlayerProps) {
         className="w-full h-full object-contain outline-none" 
         playsInline
         crossOrigin="anonymous"
+        poster={poster}
       ></video>
     </div>
   )

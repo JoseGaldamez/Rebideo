@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -72,12 +73,48 @@ func (r *Repository) InsertVideoRecord(ctx context.Context, userID, title, descr
 }
 
 // UpdateVideoRecordStatus updates the status and updated_at timestamp for the
-// video identified by id.
-func (r *Repository) UpdateVideoRecordStatus(ctx context.Context, id, statusVal string) error {
-	_, err := r.client.Collection("videos").Doc(id).Update(ctx, []firestore.Update{
+// video identified by id. If statusVal is "active", it also constructs and
+// updates the thumbnail_url. If statusVal is "processing", it increments
+// processing_attempts. If statusVal is "failed", it records errMsg.
+func (r *Repository) UpdateVideoRecordStatus(ctx context.Context, id, statusVal string, errMsg string) error {
+	updates := []firestore.Update{
 		{Path: "status", Value: statusVal},
 		{Path: "updated_at", Value: time.Now().UTC()},
-	})
+	}
+
+	if statusVal == "processing" {
+		updates = append(updates, firestore.Update{
+			Path:  "processing_attempts",
+			Value: firestore.Increment(1),
+		})
+		updates = append(updates, firestore.Update{
+			Path:  "error_message",
+			Value: "",
+		})
+	}
+
+	if statusVal == "failed" && errMsg != "" {
+		updates = append(updates, firestore.Update{
+			Path:  "error_message",
+			Value: errMsg,
+		})
+	}
+
+	if statusVal == "active" {
+		processedBucket := os.Getenv("GCS_PROCESSED_BUCKET")
+		if processedBucket == "" {
+			processedBucket = "rebideo-processed-videos"
+		}
+		var thumbURL string
+		if emulatorHost := os.Getenv("STORAGE_EMULATOR_HOST"); emulatorHost != "" {
+			thumbURL = fmt.Sprintf("%s/%s/%s/thumbnail.jpg", emulatorHost, processedBucket, id)
+		} else {
+			thumbURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s/thumbnail.jpg", processedBucket, id)
+		}
+		updates = append(updates, firestore.Update{Path: "thumbnail_url", Value: thumbURL})
+	}
+
+	_, err := r.client.Collection("videos").Doc(id).Update(ctx, updates)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			return ErrNotFound

@@ -161,7 +161,7 @@ export default function WatchPage({ params }: WatchPageProps) {
         /* 4. Video Player Canvas */
         <div className="flex flex-col gap-6">
           <div className="w-full rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
-            <HlsVideoPlayer src={video.playlist_url || ''} />
+            <HlsVideoPlayer src={video.playlist_url || ''} poster={video.thumbnail_url} />
           </div>
           
           <div className="rounded-3xl p-8 glass">

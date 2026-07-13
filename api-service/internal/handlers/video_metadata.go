@@ -20,12 +20,15 @@ import (
 // videoMetadataResponse is the JSON body returned by GET /videos/{id}.
 // PlaylistURL is omitted from the response when the video is not active.
 type videoMetadataResponse struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Visibility  string `json:"visibility"`
-	Status      string `json:"status"`
-	PlaylistURL string `json:"playlist_url,omitempty"`
+	ID                 string `json:"id"`
+	Title              string `json:"title"`
+	Description        string `json:"description"`
+	Visibility         string `json:"visibility"`
+	Status             string `json:"status"`
+	PlaylistURL        string `json:"playlist_url,omitempty"`
+	ThumbnailURL       string `json:"thumbnail_url,omitempty"`
+	ProcessingAttempts int    `json:"processing_attempts"`
+	ErrorMessage       string `json:"error_message,omitempty"`
 }
 
 // VideoMetadataHandler handles GET /videos/{id} requests.
@@ -108,11 +111,14 @@ func (h *VideoMetadataHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// Status is not active — return current status without a playlist URL.
 	writeJSON(w, http.StatusOK, videoMetadataResponse{
-		ID:          video.ID,
-		Title:       video.Title,
-		Description: video.Description,
-		Visibility:  video.Visibility,
-		Status:      video.Status,
+		ID:                 video.ID,
+		Title:              video.Title,
+		Description:        video.Description,
+		Visibility:         video.Visibility,
+		Status:             video.Status,
+		ThumbnailURL:       video.ThumbnailURL,
+		ProcessingAttempts: video.ProcessingAttempts,
+		ErrorMessage:       video.ErrorMessage,
 	})
 }
 
@@ -131,17 +137,20 @@ func (h *VideoMetadataHandler) handleActiveVideo(w http.ResponseWriter, ctx cont
 
 	if !exists {
 		// Master playlist is gone — lazily expire the record.
-		if updateErr := h.repo.UpdateVideoRecordStatus(ctx, video.ID, models.StatusExpired); updateErr != nil {
+		if updateErr := h.repo.UpdateVideoRecordStatus(ctx, video.ID, models.StatusExpired, ""); updateErr != nil {
 			// Log the update failure but still return the expired status to
 			// the caller; a subsequent request will retry the update.
 			_ = updateErr
 		}
 		writeJSON(w, http.StatusOK, videoMetadataResponse{
-			ID:          video.ID,
-			Title:       video.Title,
-			Description: video.Description,
-			Visibility:  video.Visibility,
-			Status:      models.StatusExpired,
+			ID:                 video.ID,
+			Title:              video.Title,
+			Description:        video.Description,
+			Visibility:         video.Visibility,
+			Status:             models.StatusExpired,
+			ThumbnailURL:       video.ThumbnailURL,
+			ProcessingAttempts: video.ProcessingAttempts,
+			ErrorMessage:       video.ErrorMessage,
 		})
 		return
 	}
@@ -154,12 +163,15 @@ func (h *VideoMetadataHandler) handleActiveVideo(w http.ResponseWriter, ctx cont
 	}
 
 	writeJSON(w, http.StatusOK, videoMetadataResponse{
-		ID:          video.ID,
-		Title:       video.Title,
-		Description: video.Description,
-		Visibility:  video.Visibility,
-		Status:      video.Status,
-		PlaylistURL: playlistURL,
+		ID:                 video.ID,
+		Title:              video.Title,
+		Description:        video.Description,
+		Visibility:         video.Visibility,
+		Status:             video.Status,
+		PlaylistURL:        playlistURL,
+		ThumbnailURL:       video.ThumbnailURL,
+		ProcessingAttempts: video.ProcessingAttempts,
+		ErrorMessage:       video.ErrorMessage,
 	})
 }
 

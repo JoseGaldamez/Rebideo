@@ -7,6 +7,9 @@ export interface Video {
   visibility: 'public' | 'private'
   video_url?: string
   playlist_url?: string
+  thumbnail_url?: string
+  processing_attempts?: number
+  error_message?: string
   duration?: number
   views?: number
   user_id?: string

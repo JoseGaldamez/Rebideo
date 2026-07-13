@@ -112,15 +112,22 @@ export default function StudioVideoList({ videos = [], onTriggerUpload }: Studio
                     {/* Thumbnail + Details */}
                     <td className="p-4">
                       <div className="flex gap-4 items-center">
-                        {/* Miniature Thumbnail Placeholder */}
                         <div 
                           onClick={() => isActive && router.push(`/watch/${video.id}`)}
                           className={`relative w-28 aspect-video rounded-md overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-outline flex-shrink-0 flex items-center justify-center ${
                             isActive ? 'cursor-pointer group/thumb hover:border-white/20' : 'cursor-not-allowed opacity-50'
                           }`}
                         >
+                          {video.thumbnail_url ? (
+                            <img 
+                              src={video.thumbnail_url} 
+                              alt={video.title} 
+                              className="absolute inset-0 w-full h-full object-cover animate-fade-in"
+                            />
+                          ) : null}
+
                           {isActive ? (
-                            <div className="bg-obsidian/60 w-8 h-8 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-xs opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-200">
+                            <div className="absolute z-10 bg-obsidian/60 w-8 h-8 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-xs opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-200">
                               <svg 
                                 xmlns="http://www.w3.org/2000/svg" 
                                 fill="none" 
@@ -133,7 +140,7 @@ export default function StudioVideoList({ videos = [], onTriggerUpload }: Studio
                               </svg>
                             </div>
                           ) : (
-                            <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">
+                            <span className="absolute z-10 material-symbols-outlined text-[18px] text-on-surface-variant/40">
                               {statusIcon}
                             </span>
                           )}
@@ -178,12 +185,22 @@ export default function StudioVideoList({ videos = [], onTriggerUpload }: Studio
 
                     {/* Status Badge */}
                     <td className="p-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badgeClass}`}>
-                        <span className={`material-symbols-outlined text-xs ${video.status === 'processing' ? 'animate-spin' : ''}`}>
-                          {statusIcon}
+                      <div className="flex flex-col gap-1">
+                        <span 
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badgeClass}`}
+                          title={video.error_message}
+                        >
+                          <span className={`material-symbols-outlined text-xs ${video.status === 'processing' ? 'animate-spin' : ''}`}>
+                            {statusIcon}
+                          </span>
+                          <span>{statusLabel}</span>
                         </span>
-                        <span>{statusLabel}</span>
-                      </span>
+                        {video.status === 'failed' && video.error_message && (
+                          <span className="text-[10px] text-error font-medium max-w-[200px] truncate block" title={video.error_message}>
+                            {video.error_message}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Date */}

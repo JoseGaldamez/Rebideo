@@ -159,6 +159,16 @@ func handlePubSubPayload(ctx context.Context, data []byte) error {
 	videoID := parts[1]
 	log.Printf("pubsub: starting processing for video ID %s", videoID)
 
+	// Fetch current metadata to check attempts limit
+	videoMeta, err := api.GetVideoMetadata(videoID)
+	if err == nil && videoMeta.ProcessingAttempts >= 5 {
+		log.Printf("pubsub: video ID %s has exceeded max processing attempts (%d >= 5). Acknowledging message to stop retry loop.", videoID, videoMeta.ProcessingAttempts)
+		if videoMeta.Status != "failed" {
+			_ = api.UpdateVideoStatusWithError(videoID, "failed", "Excedido el límite máximo de 5 intentos de procesamiento")
+		}
+		return nil // Acknowledge message to remove from queue
+	}
+
 	// Throttling via concurrency semaphore
 	if concurrencySem != nil {
 		select {
@@ -176,10 +186,11 @@ func handlePubSubPayload(ctx context.Context, data []byte) error {
 	}
 
 	// Process transcoding
-	err := transcoder.ProcessVideo(ctx, event.Bucket, event.Name, videoID)
+	err = transcoder.ProcessVideo(ctx, event.Bucket, event.Name, videoID)
 	if err != nil {
 		log.Printf("pubsub: transcoding failed for video %s: %v", videoID, err)
-		if setErr := api.UpdateVideoStatus(videoID, "failed"); setErr != nil {
+		errorMsg := fmt.Sprintf("Error de transcoding: %v", err)
+		if setErr := api.UpdateVideoStatusWithError(videoID, "failed", errorMsg); setErr != nil {
 			log.Printf("pubsub: failed to set status to failed: %v", setErr)
 		}
 		return err
