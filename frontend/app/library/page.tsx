@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { collection, query, onSnapshot, where } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../components/AppShell'
-import VideoGrid from '../../components/VideoGrid'
+import StudioVideoList from '../../components/StudioVideoList'
 import { Video } from '../../types'
 
 export default function LibraryPage() {
@@ -169,7 +169,7 @@ export default function LibraryPage() {
               <p className="text-sm font-light text-on-surface-variant">Cargando biblioteca...</p>
             </div>
           ) : (
-            <VideoGrid 
+            <StudioVideoList 
               videos={filteredVideos} 
               onTriggerUpload={navigateToUpload} 
             />

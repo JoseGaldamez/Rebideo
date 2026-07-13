@@ -14,7 +14,7 @@ export default function UploadPage() {
   }
 
   const onUploadSuccess = () => {
-    router.push('/')
+    router.push('/library')
   }
 
   return (

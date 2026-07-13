@@ -62,7 +62,18 @@ export default function VideoCard({ video }: VideoCardProps) {
       {/* Thumbnail */}
       <div className="relative w-full aspect-video overflow-hidden cursor-pointer bg-gradient-to-br from-zinc-900 to-zinc-950" onClick={navigateToVideo}>
         <div className="w-full h-full flex items-center justify-center relative transition-transform duration-500 group-hover:scale-105 before:content-[''] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_center,rgba(208,188,255,0.05)_0%,transparent_80%)] before:z-1 before:pointer-events-none">
-          <span className="material-symbols-outlined text-[36px] text-on-surface-variant opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-10 bg-obsidian/60 w-14 h-14 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm">play_arrow</span>
+          <div className="bg-obsidian/60 w-14 h-14 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-10">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              className="w-6 h-6 text-on-surface-variant translate-x-[1px]"
+            >
+              <polygon points="5 3 19 12 5 21 5 3" strokeLinejoin="round" />
+            </svg>
+          </div>
         </div>
         <div className="absolute top-3 left-3 z-10">
           <span className={`inline-flex items-center px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
