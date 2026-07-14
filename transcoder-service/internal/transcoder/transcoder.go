@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/JoseGaldamez/rebideo-transcoder-service/internal/api"
 )
 
 // ProcessVideo handles downloading the raw video, transcoding it to HLS, and uploading the segments.
@@ -57,6 +58,88 @@ func ProcessVideo(ctx context.Context, bucket, objectName, videoID string) error
 	_, err = exec.LookPath("ffmpeg")
 	if err != nil {
 		return fmt.Errorf("ffmpeg binary not found in PATH: please install ffmpeg before running: %w", err)
+	}
+
+	// Generate thumbnail frame at 5-second mark early
+	log.Printf("transcoder: extracting thumbnail frame at 5s from %s...", localInputFile)
+	thumbCmd := exec.Command("ffmpeg",
+		"-y",
+		"-ss", "00:00:05",
+		"-i", "input.mp4",
+		"-vframes", "1",
+		"-q:v", "2",
+		"thumbnail.jpg",
+	)
+	thumbCmd.Dir = tempDir
+
+	if thumbOutput, thumbErr := thumbCmd.CombinedOutput(); thumbErr != nil {
+		log.Printf("transcoder: warning: failed to extract thumbnail: %v (output: %s). Trying AV1 fallback chain...", thumbErr, string(thumbOutput))
+		
+		// Fallback 1: dav1d software
+		dav1dThumbCmd := exec.Command("ffmpeg",
+			"-y",
+			"-c:v", "dav1d",
+			"-ss", "00:00:05",
+			"-i", "input.mp4",
+			"-vframes", "1",
+			"-q:v", "2",
+			"thumbnail.jpg",
+		)
+		dav1dThumbCmd.Dir = tempDir
+		if _, dav1dThumbErr := dav1dThumbCmd.CombinedOutput(); dav1dThumbErr == nil {
+			log.Printf("transcoder: thumbnail extracted successfully using dav1d software fallback")
+		} else {
+			log.Printf("transcoder: warning: dav1d fallback for thumbnail failed: %v. Trying av1_cuvid...", dav1dThumbErr)
+			
+			// Fallback 2: av1_cuvid hardware
+			fallbackThumbCmd := exec.Command("ffmpeg",
+				"-y",
+				"-c:v", "av1_cuvid",
+				"-ss", "00:00:05",
+				"-i", "input.mp4",
+				"-vframes", "1",
+				"-q:v", "2",
+				"thumbnail.jpg",
+			)
+			fallbackThumbCmd.Dir = tempDir
+			if fallbackThumbOutput, fallbackThumbErr := fallbackThumbCmd.CombinedOutput(); fallbackThumbErr != nil {
+				log.Printf("transcoder: warning: av1_cuvid fallback for thumbnail failed: %v (output: %s)", fallbackThumbErr, string(fallbackThumbOutput))
+			} else {
+				log.Printf("transcoder: thumbnail extracted successfully using av1_cuvid fallback")
+			}
+		}
+	} else {
+		log.Printf("transcoder: thumbnail extracted successfully as thumbnail.jpg")
+	}
+
+	// Upload thumbnail early to processed bucket
+	processedBucketName := os.Getenv("GCS_PROCESSED_BUCKET")
+	if processedBucketName == "" {
+		processedBucketName = "rebideo-processed-videos"
+	}
+
+	localThumbPath := filepath.Join(tempDir, "thumbnail.jpg")
+	if _, err := os.Stat(localThumbPath); err == nil {
+		thumbObjectKey := fmt.Sprintf("%s/thumbnail.jpg", videoID)
+		log.Printf("transcoder: uploading early thumbnail to gs://%s/%s...", processedBucketName, thumbObjectKey)
+		if err := uploadToGCS(ctx, storageClient, processedBucketName, thumbObjectKey, localThumbPath, "image/jpeg"); err != nil {
+			log.Printf("transcoder: warning: early thumbnail GCS upload failed: %v", err)
+		} else {
+			// Construct the public thumbnail URL
+			var thumbURL string
+			if emulatorHost := os.Getenv("STORAGE_EMULATOR_HOST"); emulatorHost != "" {
+				thumbURL = fmt.Sprintf("%s/%s/%s/thumbnail.jpg", emulatorHost, processedBucketName, videoID)
+			} else {
+				thumbURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s/thumbnail.jpg", processedBucketName, videoID)
+			}
+			// Update the status payload with the thumbnail URL immediately
+			log.Printf("transcoder: updating database with early thumbnail URL: %s", thumbURL)
+			if apiErr := api.UpdateVideoStatusWithThumbnail(videoID, "processing", thumbURL); apiErr != nil {
+				log.Printf("transcoder: warning: failed to update early thumbnail in database: %v", apiErr)
+			}
+		}
+	} else {
+		log.Printf("transcoder: warning: thumbnail.jpg was not generated, skipping early upload")
 	}
 
 	log.Printf("transcoder: running ffmpeg on %s to generate HLS segments...", localInputFile)
@@ -137,57 +220,7 @@ func ProcessVideo(ctx context.Context, bucket, objectName, videoID string) error
 	}
 	log.Printf("transcoder: HLS transcoding completed successfully")
 
-	// Generate thumbnail frame at 5-second mark
-	log.Printf("transcoder: extracting thumbnail frame at 5s from %s...", localInputFile)
-	thumbCmd := exec.Command("ffmpeg",
-		"-y",
-		"-ss", "00:00:05",
-		"-i", "input.mp4",
-		"-vframes", "1",
-		"-q:v", "2",
-		"thumbnail.jpg",
-	)
-	thumbCmd.Dir = tempDir
 
-	if thumbOutput, thumbErr := thumbCmd.CombinedOutput(); thumbErr != nil {
-		log.Printf("transcoder: warning: failed to extract thumbnail: %v (output: %s). Trying AV1 fallback chain...", thumbErr, string(thumbOutput))
-		
-		// Fallback 1: dav1d software
-		dav1dThumbCmd := exec.Command("ffmpeg",
-			"-y",
-			"-c:v", "dav1d",
-			"-ss", "00:00:05",
-			"-i", "input.mp4",
-			"-vframes", "1",
-			"-q:v", "2",
-			"thumbnail.jpg",
-		)
-		dav1dThumbCmd.Dir = tempDir
-		if _, dav1dThumbErr := dav1dThumbCmd.CombinedOutput(); dav1dThumbErr == nil {
-			log.Printf("transcoder: thumbnail extracted successfully using dav1d software fallback")
-		} else {
-			log.Printf("transcoder: warning: dav1d fallback for thumbnail failed: %v. Trying av1_cuvid...", dav1dThumbErr)
-			
-			// Fallback 2: av1_cuvid hardware
-			fallbackThumbCmd := exec.Command("ffmpeg",
-				"-y",
-				"-c:v", "av1_cuvid",
-				"-ss", "00:00:05",
-				"-i", "input.mp4",
-				"-vframes", "1",
-				"-q:v", "2",
-				"thumbnail.jpg",
-			)
-			fallbackThumbCmd.Dir = tempDir
-			if fallbackThumbOutput, fallbackThumbErr := fallbackThumbCmd.CombinedOutput(); fallbackThumbErr != nil {
-				log.Printf("transcoder: warning: av1_cuvid fallback for thumbnail failed: %v (output: %s)", fallbackThumbErr, string(fallbackThumbOutput))
-			} else {
-				log.Printf("transcoder: thumbnail extracted successfully using av1_cuvid fallback")
-			}
-		}
-	} else {
-		log.Printf("transcoder: thumbnail extracted successfully as thumbnail.jpg")
-	}
 
 	// Upload HLS output files to processed bucket
 	files, err := os.ReadDir(tempDir)
@@ -195,10 +228,6 @@ func ProcessVideo(ctx context.Context, bucket, objectName, videoID string) error
 		return fmt.Errorf("read temp dir: %w", err)
 	}
 
-	processedBucketName := os.Getenv("GCS_PROCESSED_BUCKET")
-	if processedBucketName == "" {
-		processedBucketName = "rebideo-processed-videos"
-	}
 
 	log.Printf("transcoder: uploading HLS output files to gs://%s/%s/...", processedBucketName, videoID)
 	for _, file := range files {

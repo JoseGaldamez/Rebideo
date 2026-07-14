@@ -139,7 +139,7 @@ func (h *VideoMetadataHandler) handleActiveVideo(w http.ResponseWriter, ctx cont
 
 	if !exists {
 		// Master playlist is gone — lazily expire the record.
-		if updateErr := h.repo.UpdateVideoRecordStatus(ctx, video.ID, models.StatusExpired, ""); updateErr != nil {
+		if updateErr := h.repo.UpdateVideoRecordStatus(ctx, video.ID, models.StatusExpired, "", ""); updateErr != nil {
 			// Log the update failure but still return the expired status to
 			// the caller; a subsequent request will retry the update.
 			_ = updateErr

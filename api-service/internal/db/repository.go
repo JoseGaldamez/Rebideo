@@ -73,10 +73,11 @@ func (r *Repository) InsertVideoRecord(ctx context.Context, userID, title, descr
 }
 
 // UpdateVideoRecordStatus updates the status and updated_at timestamp for the
-// video identified by id. If statusVal is "active", it also constructs and
-// updates the thumbnail_url. If statusVal is "processing", it increments
+// video identified by id. If thumbURL is provided, it updates the thumbnail_url.
+// If statusVal is "active" and thumbURL is empty, it constructs and updates the
+// default thumbnail_url. If statusVal is "processing", it increments
 // processing_attempts. If statusVal is "failed", it records errMsg.
-func (r *Repository) UpdateVideoRecordStatus(ctx context.Context, id, statusVal string, errMsg string) error {
+func (r *Repository) UpdateVideoRecordStatus(ctx context.Context, id, statusVal string, errMsg string, thumbURL string) error {
 	updates := []firestore.Update{
 		{Path: "status", Value: statusVal},
 		{Path: "updated_at", Value: time.Now().UTC()},
@@ -100,18 +101,20 @@ func (r *Repository) UpdateVideoRecordStatus(ctx context.Context, id, statusVal 
 		})
 	}
 
-	if statusVal == "active" {
+	if thumbURL != "" {
+		updates = append(updates, firestore.Update{Path: "thumbnail_url", Value: thumbURL})
+	} else if statusVal == "active" {
 		processedBucket := os.Getenv("GCS_PROCESSED_BUCKET")
 		if processedBucket == "" {
 			processedBucket = "rebideo-processed-videos"
 		}
-		var thumbURL string
+		var defaultThumbURL string
 		if emulatorHost := os.Getenv("STORAGE_EMULATOR_HOST"); emulatorHost != "" {
-			thumbURL = fmt.Sprintf("%s/%s/%s/thumbnail.jpg", emulatorHost, processedBucket, id)
+			defaultThumbURL = fmt.Sprintf("%s/%s/%s/thumbnail.jpg", emulatorHost, processedBucket, id)
 		} else {
-			thumbURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s/thumbnail.jpg", processedBucket, id)
+			defaultThumbURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s/thumbnail.jpg", processedBucket, id)
 		}
-		updates = append(updates, firestore.Update{Path: "thumbnail_url", Value: thumbURL})
+		updates = append(updates, firestore.Update{Path: "thumbnail_url", Value: defaultThumbURL})
 	}
 
 	_, err := r.client.Collection("videos").Doc(id).Update(ctx, updates)

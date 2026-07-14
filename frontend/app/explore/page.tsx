@@ -117,7 +117,7 @@ export default function ExplorePage() {
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar contenido público..." 
-              className="w-full bg-white/[0.02] border border-outline focus:border-primary rounded-full py-3 pr-4 pl-[54px] text-white font-inter text-sm transition-all outline-none"
+              className="w-full bg-white/[0.02] border border-outline focus:border-primary rounded-full py-3.5 pr-4 pl-[54px] text-white font-inter text-sm transition-all outline-none"
             />
           </div>
         </header>

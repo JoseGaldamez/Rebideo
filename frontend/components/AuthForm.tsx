@@ -2,10 +2,11 @@
 import React, { useState } from 'react'
 import { 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+  createUserWithEmailAndPassword,
+  signInWithPopup
 } from 'firebase/auth'
 import Link from 'next/link'
-import { auth } from '../lib/firebase'
+import { auth, googleProvider } from '../lib/firebase'
 import Toast from './Toast'
 
 interface AuthFormProps {
@@ -23,8 +24,28 @@ export default function AuthForm({ isSignUp = false }: AuthFormProps) {
     alert('Se ha enviado un enlace para restablecer la contraseña a: ' + (email || 'tu correo electrónico.'))
   }
 
-  const socialLogin = (provider: string) => {
-    alert(`Inicio de sesión con ${provider} (Demostración de Integración).`)
+  const signInWithGoogle = async () => {
+    if (!auth || !googleProvider) {
+      setToast({ message: 'Firebase no está inicializado.', type: 'error' })
+      return
+    }
+
+    setAuthLoading(true)
+    try {
+      await signInWithPopup(auth, googleProvider)
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, no need to show an error
+        return
+      }
+      if (err.code === 'auth/cancelled-popup-request') {
+        return
+      }
+      console.error('Error al iniciar sesión con Google:', err)
+      setToast({ message: 'Error al iniciar sesión con Google. Inténtalo de nuevo.', type: 'error' })
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -203,7 +224,7 @@ export default function AuthForm({ isSignUp = false }: AuthFormProps) {
         <div className="w-full mb-6">
           <button 
             className="w-full py-3 px-4 border border-white/[0.08] hover:border-white/20 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2.5 transition-all duration-300 bg-white/[0.01] hover:bg-white/[0.03] cursor-pointer" 
-            onClick={() => socialLogin('Google')}
+            onClick={signInWithGoogle}
           >
             <img 
               src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 

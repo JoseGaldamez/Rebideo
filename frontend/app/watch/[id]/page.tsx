@@ -67,7 +67,7 @@ export default function WatchPage({ params }: WatchPageProps) {
 
   // Fetch video on load
   useEffect(() => {
-    if (user && videoId) {
+    if (videoId) {
       fetchVideo()
     }
   }, [user, videoId])
@@ -257,9 +257,7 @@ export default function WatchPage({ params }: WatchPageProps) {
           ) : video ? (
             /* 4. Video Player Canvas */
             <div className="flex flex-col gap-4">
-              <div className="w-full rounded-2xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.6)] border border-outline bg-black">
-                <HlsVideoPlayer src={video.playlist_url || ''} poster={video.thumbnail_url} />
-              </div>
+              <HlsVideoPlayer src={video.playlist_url || ''} poster={video.thumbnail_url} />
               
               <h1 className="text-2xl font-semibold text-white font-sora mt-2 tracking-tight">
                 {video.title}

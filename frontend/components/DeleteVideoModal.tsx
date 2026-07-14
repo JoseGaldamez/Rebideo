@@ -45,44 +45,47 @@ export default function DeleteVideoModal({ isOpen, onClose, videoId, onDeleteSuc
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-[440px] rounded-3xl p-8 bg-obsidian border border-error/10 flex flex-col gap-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-error/10 border border-error/20 flex items-center justify-center text-error animate-pulse">
-            <span className="material-symbols-outlined text-3xl">delete_forever</span>
+      <div className="w-full max-w-[420px] rounded-3xl p-8 bg-obsidian border border-error/15 flex flex-col gap-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="flex flex-col items-center gap-5 text-center">
+          {/* Glowing Caution Ring with ping effect */}
+          <div className="w-16 h-16 rounded-full bg-error/10 border border-error/20 flex items-center justify-center text-error relative shadow-[0_0_20px_rgba(255,180,171,0.15)]">
+            <span className="material-symbols-outlined text-3xl z-10">warning</span>
+            <div className="absolute inset-0 rounded-full border border-error/40 animate-ping opacity-25"></div>
           </div>
-          <h3 className="text-xl font-semibold text-white font-sora">¿Eliminar este video?</h3>
-          <p className="text-sm text-on-surface-variant leading-relaxed">
-            Esta acción es **permanente**. Se eliminarán todos los archivos de transmisión HLS y la información del video en la base de datos de manera definitiva.
+          
+          <h3 className="text-xl font-semibold text-white font-sora tracking-tight">¿Eliminar este video?</h3>
+          <p className="text-sm text-on-surface-variant leading-relaxed font-inter">
+            Esta acción es <strong className="text-white font-semibold">permanente</strong>. Se eliminarán todos los archivos de transmisión HLS y la información del video en la base de datos de manera definitiva.
           </p>
         </div>
 
         {deleteError && (
-          <div className="p-4 rounded-xl bg-error/15 border border-error/25 text-error text-xs font-inter flex items-center gap-2">
+          <div className="p-4 rounded-xl bg-error/10 border border-error/25 text-error text-xs font-inter flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">warning</span>
             <span>{deleteError}</span>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex gap-3 justify-center pt-2">
+        <div className="flex gap-3.5 justify-center pt-2 w-full">
           <button 
             onClick={() => {
               onClose()
               setDeleteError('')
             }}
-            className="py-2.5 px-6 font-semibold bg-transparent hover:bg-white/5 border border-outline text-white text-xs font-inter rounded-full transition-all cursor-pointer flex-1"
+            className="py-3 px-6 font-semibold bg-white/[0.02] hover:bg-white/5 border border-outline hover:border-white/20 text-white text-xs font-inter rounded-full transition-all cursor-pointer flex-1 text-center"
             disabled={deleting}
           >
             Cancelar
           </button>
           <button 
             onClick={handleDeleteVideo}
-            className="py-2.5 px-6 font-semibold bg-error hover:bg-error-hover text-white text-xs font-inter rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all flex-1"
+            className="py-3 px-6 font-semibold bg-error text-on-error hover:bg-[#ffcdd2] hover:text-[#5c0003] text-xs font-inter rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all flex-1 shadow-[0_4px_15px_rgba(255,180,171,0.25)]"
             disabled={deleting}
           >
             {deleting ? (
               <>
-                <span className="w-4 h-4 border-2 border-white/20 border-l-white rounded-full animate-spin"></span>
+                <span className="w-4 h-4 border-2 border-on-error/20 border-l-on-error rounded-full animate-spin"></span>
                 <span>Eliminando...</span>
               </>
             ) : (

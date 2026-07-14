@@ -45,11 +45,11 @@ export default function HlsVideoPlayer({ src, poster }: HlsVideoPlayerProps) {
   }, [src])
 
   return (
-    <div className="w-full rounded-3xl overflow-hidden bg-black shadow-[0_20px_50px_rgba(0,0,0,0.7)] aspect-video flex items-center justify-center border border-outline relative">
+    <div className="w-full rounded-2xl overflow-hidden bg-black shadow-[0_20px_50px_rgba(0,0,0,0.6)] aspect-video flex items-center justify-center border border-outline relative">
       <video 
         ref={videoRef} 
         controls 
-        className="w-full h-full object-contain outline-none" 
+        className="w-full h-full object-contain outline-none rounded-2xl" 
         playsInline
         crossOrigin="anonymous"
         poster={poster}
