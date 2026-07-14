@@ -167,3 +167,31 @@ func (r *Repository) Ping(ctx context.Context) error {
 	}
 	return nil
 }
+
+// UpdateVideoMetadata updates the title, description, and visibility of a video record.
+func (r *Repository) UpdateVideoMetadata(ctx context.Context, id, title, description, visibility string) error {
+	updates := []firestore.Update{
+		{Path: "title", Value: title},
+		{Path: "description", Value: description},
+		{Path: "visibility", Value: visibility},
+		{Path: "updated_at", Value: time.Now().UTC()},
+	}
+
+	_, err := r.client.Collection("videos").Doc(id).Update(ctx, updates)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return ErrNotFound
+		}
+		return fmt.Errorf("db: update video metadata: %w", err)
+	}
+	return nil
+}
+
+// DeleteVideoRecord deletes a video record document from Firestore.
+func (r *Repository) DeleteVideoRecord(ctx context.Context, id string) error {
+	_, err := r.client.Collection("videos").Doc(id).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("db: delete video record: %w", err)
+	}
+	return nil
+}

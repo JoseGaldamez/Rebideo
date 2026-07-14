@@ -55,6 +55,7 @@ func main() {
 	uploadTokenHandler := handlers.NewUploadTokenHandler(repo)
 	videoMetadataHandler := handlers.NewVideoMetadataHandler(repo, authClient)
 	videoStatusHandler := handlers.NewVideoStatusHandler(repo)
+	videoEditHandler := handlers.NewVideoEditHandler(repo, authClient)
 	healthHandler := handlers.NewHealthHandler(repo)
 
 	// --- Router ---
@@ -71,6 +72,12 @@ func main() {
 
 	// PATCH /videos/{id}/status — internal status update endpoint.
 	mux.Handle("PATCH /videos/{id}/status", videoStatusHandler)
+
+	// PATCH /videos/{id} — edit video metadata. Protected by Firebase Auth.
+	mux.Handle("PATCH /videos/{id}", middleware.AuthMiddleware(authClient, videoEditHandler))
+
+	// DELETE /videos/{id} — delete video and GCS objects. Protected by Firebase Auth.
+	mux.Handle("DELETE /videos/{id}", middleware.AuthMiddleware(authClient, videoEditHandler))
 
 	// --- Server ---
 	addr := os.Getenv("PORT")

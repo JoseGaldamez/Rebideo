@@ -21,6 +21,7 @@ import (
 // PlaylistURL is omitted from the response when the video is not active.
 type videoMetadataResponse struct {
 	ID                 string `json:"id"`
+	UserID             string `json:"user_id"`
 	Title              string `json:"title"`
 	Description        string `json:"description"`
 	Visibility         string `json:"visibility"`
@@ -112,6 +113,7 @@ func (h *VideoMetadataHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// Status is not active — return current status without a playlist URL.
 	writeJSON(w, http.StatusOK, videoMetadataResponse{
 		ID:                 video.ID,
+		UserID:             video.UserID,
 		Title:              video.Title,
 		Description:        video.Description,
 		Visibility:         video.Visibility,
@@ -144,6 +146,7 @@ func (h *VideoMetadataHandler) handleActiveVideo(w http.ResponseWriter, ctx cont
 		}
 		writeJSON(w, http.StatusOK, videoMetadataResponse{
 			ID:                 video.ID,
+			UserID:             video.UserID,
 			Title:              video.Title,
 			Description:        video.Description,
 			Visibility:         video.Visibility,
@@ -164,6 +167,7 @@ func (h *VideoMetadataHandler) handleActiveVideo(w http.ResponseWriter, ctx cont
 
 	writeJSON(w, http.StatusOK, videoMetadataResponse{
 		ID:                 video.ID,
+		UserID:             video.UserID,
 		Title:              video.Title,
 		Description:        video.Description,
 		Visibility:         video.Visibility,

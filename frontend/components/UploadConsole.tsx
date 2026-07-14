@@ -269,7 +269,7 @@ export default function UploadConsole({ user, onCancel, onUploadSuccess }: Uploa
               disabled={uploading}
             />
             
-            {selectedFile ? (
+            {selectedFile && videoSrc ? (
               <div className="relative w-full h-full flex items-center justify-center">
                 {/* Clear / Select another video button */}
                 <button 
